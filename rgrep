@@ -7,10 +7,11 @@ USAGE = "Usage: rgrep [OPTIONS] PATTERN [FILE]"
 
 def parse_options(args)
   options = {}
+  options[:a] = 0
   parser = OptionParser.new do |opts|
     opts.banner = USAGE
-    opts.on("-a", "Run verbosely") do |arg|
-      options[:a] = arg
+    opts.on("-a NLINES", "Mandatory argument") do |arg|
+      options[:a] = arg.to_i
     end
   end
   parser.parse!(args)
@@ -27,9 +28,12 @@ flines = if options.key?(:fname)
 elsif ! ARGV.empty?
   File.open(ARGV.shift).map { |l| l }
 else
-  gets.chomp.split("\n")
+  STDIN.read.chomp.split("\n")
 end
 
-flines.each do |line|
-  puts line if line =~ request_expr
+#flines.each { |line|  puts line if line =~ request_expr }
+
+flines.select { |it| it =~ request_expr }.each do |line|
+  line_index = flines.find_index(line)
+  puts flines[line_index - options[:a], 2 * options[:a] + 1]
 end
