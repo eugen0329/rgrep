@@ -1,5 +1,35 @@
 #!/usr/bin/env ruby
 
 require 'pry'
+require 'optparse'
 
+USAGE = "Usage: rgrep [OPTIONS] PATTERN [FILE]"
 
+def parse_options(args)
+  options = {}
+  parser = OptionParser.new do |opts|
+    opts.banner = USAGE
+    opts.on("-a", "Run verbosely") do |arg|
+      options[:a] = arg
+    end
+  end
+  parser.parse!(args)
+  options 
+end
+
+options = parse_options(ARGV)
+
+request_expr =   options.has_key?(:fname) ? Regexp.new(options[:fname]) : 
+                (! ARGV.empty?) ? Regexp.new(ARGV.shift) : (puts USAGE; exit 1)
+
+flines = if options.key?(:fname) 
+  File.open(options[:fname]).map { |l| l } 
+elsif ! ARGV.empty?
+  File.open(ARGV.shift).map { |l| l }
+else
+  gets.chomp.split("\n")
+end
+
+flines.each do |line|
+  puts line if line =~ request_expr
+end
