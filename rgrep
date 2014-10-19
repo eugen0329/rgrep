@@ -59,16 +59,15 @@ def unzip_archive(filename)
   conten_path
 end
 
-def open_file(filename)
-  if File.extname(filename) == ".zip" 
-    unzip_archive(filename).each do |fname| 
-      File.open(fname) { |file| yield(file) }
-    end
-    
-  else
-    File.open(filename) { |file| yield(file) }
+def unzip_files(fnames)
+  unzipped_fnames = []
+  fnames.select { |fn| File.extname(fn) == ".zip" }.each do |fname|
+    unzipped_fnames.concat( unzip_archive(fname) )
+    fnames.delete(fname)
   end
+  unzipped_fnames
 end
+
 
 options = parse_options(ARGV)
 exp =   options.has_key?(:regexp) ? options[:regexp] : 
@@ -76,14 +75,16 @@ exp =   options.has_key?(:regexp) ? options[:regexp] :
 options[:fnames].concat(ARGV)
 
 if ! options[:fnames].empty? 
+  if options[:Z]
+    unzipped_fnames = unzip_files(options[:fnames])
+    options[:fnames].concat( unzipped_fnames )
+  else
+    options[:fnames].reject! { |fn| File.extname(fn) == ".zip" }
+  end
   options[:fnames].each do |fname| 
-    #File.open(fname) do |file|
-    #  puts "In the file #{fname}:".blue
-    #  find_in_file(file, exp,options[:a])
-    #end
-    open_file(fname) do |file|
+    File.open(fname) do |file|
       puts "In the file #{fname}:".blue
-      find_in_file(file, exp,options[:a])
+      find_in_file(file, exp, options[:a])
     end
   end
 else
