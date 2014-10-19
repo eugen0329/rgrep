@@ -1,39 +1,52 @@
 #!/usr/bin/env ruby
 
-require 'pry'
-require 'optparse'
+require 'pry' 
+require 'optparse' 
 
 USAGE = "Usage: rgrep [OPTIONS] PATTERN [FILE]"
+
 
 def parse_options(args)
   options = {}
   options[:a] = 0
+  options[:fname] = []
   parser = OptionParser.new do |opts|
     opts.banner = USAGE
-    opts.on("-a NLINES", "Mandatory argument") do |arg|
-      options[:a] = arg.to_i
+
+    opts.on("-a NLINES", Integer, "Disp NLINES before and after the mutching string") do |arg|
+      options[:a] = arg
+    end
+    opts.on("-f","--files AB", Array) do |arg|
+      options[:fname] = arg
+    end
+    opts.on("-g","--regular-expression AB", "Mandatory argument") do |arg|
+      options[:regexp] = Regexp.new(arg)
     end
   end
   parser.parse!(args)
   options 
 end
-
-options = parse_options(ARGV)
-
-request_expr =   options.has_key?(:fname) ? Regexp.new(options[:fname]) : 
-                (! ARGV.empty?) ? Regexp.new(ARGV.shift) : (puts USAGE; exit 1)
-
-flines = if options.key?(:fname) 
-  File.open(options[:fname]).map { |l| l } 
-elsif ! ARGV.empty?
-  File.open(ARGV.shift).map { |l| l }
-else
-  STDIN.read.chomp.split("\n")
+  
+def find_in_file(file, exp, radius)
+  lines = file.map { |a| a }
+  lines.select { |it| it =~ exp }.each do |line|
+    index = lines.find_index(line)
+    puts lines[index - radius, 2 * radius + 1]
+  end
 end
 
-#flines.each { |line|  puts line if line =~ request_expr }
+options = parse_options(ARGV)
+exp =   options.has_key?(:regexp) ? options[:regexp] : 
+                    ! ARGV.empty? ? Regexp.new(ARGV.shift) : (puts USAGE; exit 1)
 
-flines.select { |it| it =~ request_expr }.each do |line|
-  line_index = flines.find_index(line)
-  puts flines[line_index - options[:a], 2 * options[:a] + 1]
+if ! options[:fname].empty? || ! ARGV.empty?
+  options[:fname].concat(ARGV)
+  options[:fname].each do |fname| 
+    File.open(fname) do |file|
+      puts "In the file #{fname}"
+      find_in_file(file, exp,options[:a])
+    end
+  end
+else
+  find_in_file(STDIN.read.chomp.split("\n"), exp, options[:a])
 end
