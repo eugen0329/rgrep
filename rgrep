@@ -2,14 +2,18 @@
 
 require 'pry' 
 require 'colorize' 
+require 'zip' 
+require 'fileutils' 
 require 'optparse' 
 
+TMP_DIR   = "/tmp/#{File.basename(__FILE__, ".rb")}"
 USAGE = "Usage: rgrep [OPTIONS] PATTERN [FILE]"
 
 def parse_options(args)
   options = {}
   options[:a] = 0
   options[:fnames] = []
+  options[:Z] = false
 
   parser = OptionParser.new do |opts|
     opts.banner = USAGE
@@ -19,11 +23,14 @@ def parse_options(args)
     opts.on("-f","--files fn1,fn2,fn3", Array, "Set a list of files separated by commas") do |arg|
       options[:fnames].concat( arg )
     end
-    opts.on("-g","--regular-expression REGEXP", "Regular expression for searching in file") do |arg|
+    opts.on("-g","--regular-expression REGEXP", "Regular expression for searching in a file") do |arg|
       options[:regexp] = Regexp.new(arg)
     end
     opts.on("-R","--recursively", "Recursively search from the setted dir") do |arg|
       options[:fnames].concat( Dir['**/*'].reject { |fname| File.directory?(fname) } )
+    end
+    opts.on("-Z","--unzip", "Searching in zipped files") do |_|
+      options[:Z] = true
     end
   end
   parser.parse!(args)
@@ -39,6 +46,30 @@ def find_in_file(file, exp, radius)
   end
 end
 
+def unzip_archive(filename)
+  conten_path = []
+  Zip::File.open(filename) do |zfile| 
+    zfile.each do |file|
+      Dir.mkdir(TMP_DIR) unless Dir.exists?(TMP_DIR)
+      fpath = File.join(TMP_DIR, file.name)
+      zfile.extract(file, fpath) unless File.exist?(fpath)
+      conten_path << fpath
+    end
+  end
+  conten_path
+end
+
+def open_file(filename)
+  if File.extname(filename) == ".zip" 
+    unzip_archive(filename).each do |fname| 
+      File.open(fname) { |file| yield(file) }
+    end
+    
+  else
+    File.open(filename) { |file| yield(file) }
+  end
+end
+
 options = parse_options(ARGV)
 exp =   options.has_key?(:regexp) ? options[:regexp] : 
                     ! ARGV.empty? ? Regexp.new(ARGV.shift) : (puts USAGE; exit 1)
@@ -46,7 +77,11 @@ options[:fnames].concat(ARGV)
 
 if ! options[:fnames].empty? 
   options[:fnames].each do |fname| 
-    File.open(fname) do |file|
+    #File.open(fname) do |file|
+    #  puts "In the file #{fname}:".blue
+    #  find_in_file(file, exp,options[:a])
+    #end
+    open_file(fname) do |file|
       puts "In the file #{fname}:".blue
       find_in_file(file, exp,options[:a])
     end
