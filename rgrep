@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'pry' 
+require 'colorize' 
 require 'optparse' 
 
 USAGE = "Usage: rgrep [OPTIONS] PATTERN [FILE]"
@@ -13,7 +14,7 @@ def parse_options(args)
   parser = OptionParser.new do |opts|
     opts.banner = USAGE
 
-    opts.on("-a NLINES", Integer, "Disp NLINES before and after the mutching string") do |arg|
+    opts.on("-a NLINES", OptionParser::DecimalInteger, "Disp NLINES before and after the mutching string") do |arg|
       options[:a] = arg
     end
     opts.on("-f","--files AB", Array) do |arg|
@@ -43,7 +44,7 @@ if ! options[:fname].empty? || ! ARGV.empty?
   options[:fname].concat(ARGV)
   options[:fname].each do |fname| 
     File.open(fname) do |file|
-      puts "In the file #{fname}"
+      puts "In the file #{fname}:".blue
       find_in_file(file, exp,options[:a])
     end
   end
