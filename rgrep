@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'optparse' 
+require 'ptools'  # expands the functionality of the File class
 require 'zip' 
 require 'fileutils' 
 require 'colorize' 
@@ -87,7 +88,7 @@ def search_in_files(pattern, options)
   else
     options[:fnames].reject! { |fn| File.extname(fn) == ".zip" }
   end
-  options[:fnames].each do |fname| 
+  options[:fnames].delete_if { |fn| File.binary?(fn) }.each do |fname| 
     File.open(fname) do |file|
       puts "In the file \"#{fname}\":".blue
       find_in_file(file, pattern, options[:a])

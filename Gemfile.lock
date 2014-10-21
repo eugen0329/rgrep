@@ -10,6 +10,7 @@ GEM
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
       slop (~> 3.4)
+    ptools (1.2.6)
     rmagick (2.13.3)
     rubyzip (1.1.6)
     slop (3.6.0)
@@ -21,4 +22,5 @@ DEPENDENCIES
   colorize
   fileutils
   pry
+  ptools
   rubyzip
